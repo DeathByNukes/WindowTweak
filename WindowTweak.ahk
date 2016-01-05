@@ -1,9 +1,15 @@
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+SetBatchLines, -1
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
-SetBatchLines, -1
+Menu, TRAY, Icon, %A_WinDir%\system32\shell32.dll, 166
 SetWinDelay, -1
 SetControlDelay, -1
+CoordMode, ToolTip, Screen
+CoordMode, Pixel, Screen
+CoordMode, Mouse, Screen
+CoordMode, Caret, Screen
+CoordMode, Menu, Screen
 
 
 /*
@@ -78,6 +84,8 @@ Menu, Tweak, Add, Transparent Color, :TweakTransColor
 	Menu, TweakResize, Add, Resize 1280x1024, TweakResize1280x1024
 	Menu, TweakResize, Add, Resize 1600x900, TweakResize1600x900
 	Menu, TweakResize, Add, Resize 1600x1200, TweakResize1600x1200
+	Menu, TweakResize, Add, Resize 1920x1080, TweakResize1920x1080
+	Menu, TweakResize, Add, Resize 1920x1200, TweakResize1920x1200
 Menu, Tweak, Add, Resize, :TweakResize
 
 TweakX = Add
@@ -92,6 +100,7 @@ Loop, 2
 		Menu, TweakStyle%TweakX%, Add, Resizable, TweakStyle%TweakX%Sizebox
 		Menu, TweakStyle%TweakX%, Add, System Menu, TweakStyle%TweakX%Sysmenu
 		Menu, TweakStyle%TweakX%, Add, Disabled, TweakStyle%TweakX%Disabled
+		Menu, TweakStyle%TweakX%, Add, Always On Top, TweakStyle%TweakX%AlwaysOnTop
 		;Menu, TweakStyle%TweakX%, Add, , TweakStyle%TweakX%
 	Menu, Tweak, Add, %TweakY% Styles, :TweakStyle%TweakX%
 	TweakX = Del
@@ -99,13 +108,14 @@ Loop, 2
 }
 Menu, Tweak, Add, &Fullscreen, TweakFullscreen
 Menu, Tweak, Add, UnFullscreen, TweakUnFullscreen
+Menu, Tweak, Add, Move To 0`,0, TweakMove00
 Menu, Tweak, Add, Get Style, TweakGetStyle
 Menu, Tweak, Add, Get ExStyle, TweakGetExStyle
+Menu, Tweak, Add, Get Controls, TweakGetControls
 Menu, Tweak, Add
 Menu, Tweak, Add, &Close, TweakClose
-	Menu, TweakKill, Add, Kill this Window, TweakKillWin
-	Menu, TweakKill, Add, Kill this Window's Program, TweakKillApp
-Menu, Tweak, Add, Kill, :TweakKill
+	Menu, TweakKill, Add, Yes I'm sure, TweakKillWin
+Menu, Tweak, Add, Kill Process, :TweakKill
 
 
 return
@@ -126,8 +136,14 @@ return
 
 !#Space::
 ; #Space::
-TweakShowMenu:
 	MouseGetPos, TweakX, TweakY, TweakWin, TweakControl, 2
+	PixelGetColor, TweakColor, TweakX, TweakY, RGB
+	Menu, Tweak, Show
+return
+
+^#Space::
+	TweakControl =
+	MouseGetPos, TweakX, TweakY,, TweakWin, 2
 	PixelGetColor, TweakColor, TweakX, TweakY, RGB
 	Menu, Tweak, Show
 return
@@ -198,6 +214,16 @@ TweakLastCommand = %A_ThisLabel%
 	WinMoveClientArea( TweakWin, 1600, 1200 )
 return
 
+TweakResize1920x1080:
+TweakLastCommand = %A_ThisLabel%
+	WinMoveClientArea( TweakWin, 1920, 1080 )
+return
+
+TweakResize1920x1200:
+TweakLastCommand = %A_ThisLabel%
+	WinMoveClientArea( TweakWin, 1920, 1200 )
+return
+
 TweakResizeCustom:
 TweakLastCommand = %A_ThisLabel%
 	if TweakResizeCustom_Ok !=
@@ -240,9 +266,11 @@ TweakResizeCustom_Ok:
 return
 
 
-TweakStyleChange( Style )
-{
+TweakStyleChange( Style ) {
 	return ( SubStr( A_ThisLabel, 11, 3 ) = "Add" ? "+" : "-" ) . Style
+}
+TweakStyleIsAdd() {
+	return SubStr( A_ThisLabel, 11, 3 ) = "Add"
 }
 
 TweakStyleAddCaption:
@@ -292,11 +320,27 @@ TweakStyleDelDisabled:
 TweakLastCommand = %A_ThisLabel%
 	WinSet, Style, % TweakStyleChange(0x8000000), ahk_id %TweakWin%
 return
+TweakStyleAddAlwaysOnTop:
+TweakStyleDelAlwaysOnTop:
+TweakLastCommand = %A_ThisLabel%
+	WinSet, AlwaysOnTop, % TweakStyleIsAdd() ? "On" : "Off", ahk_id %TweakWin%
+	if ErrorLevel
+		SoundPlay *16
+return
+
 
 TweakFullscreen:
+TweakLastCommand = %A_ThisLabel%
 WinSet, Style, -0xC00000, ahk_id %TweakWin%
 WinSet, Style, -0x40000, ahk_id %TweakWin%
 SysGet, Primary, Monitor
+WinGetClass, TweakWinClass, ahk_id %TweakWin%
+if TweakWinClass = Photo_Lightweight_Viewer
+{
+	PrimaryTop -= 30
+	PrimaryBottom += 157 - 130
+}
+
 WinMoveClientArea( TweakWin, PrimaryRight - PrimaryLeft, PrimaryBottom - PrimaryTop, PrimaryLeft, PrimaryTop )
 ;WinMove, ahk_id %TweakWin%,, PrimaryLeft, PrimaryTop, 1920, 1200
 PrimaryLeft =
@@ -306,8 +350,14 @@ PrimaryBottom =
 return
 
 TweakUnFullscreen:
+TweakLastCommand = %A_ThisLabel%
 WinSet, Style, +0xC00000, ahk_id %TweakWin%
 WinSet, Style, +0x40000, ahk_id %TweakWin%
+return
+
+TweakMove00:
+TweakLastCommand = %A_ThisLabel%
+WinMoveClientArea( TweakWin, "", "", 0, 0 )
 return
 
 
@@ -319,6 +369,12 @@ TweakLastCommand = %A_ThisLabel%
 	;Loop
 return
 
+TweakGetControls:
+	WinGet, tmp, ControlList, ahk_id %TweakWin%
+	MsgBox, 0, %A_ScriptName%, %tmp%
+	tmp=
+return
+
 
 
 TweakClose:
@@ -328,50 +384,36 @@ return
 
 TweakKillWin:
 TweakLastCommand = %A_ThisLabel%
-	WinKill, ahk_id %TweakWin%
+	killApp(TweakWin)
 return
 
-TweakKillApp:
-TweakLastCommand = %A_ThisLabel%
-/*
-	TweakPID := ""
-
-WinGetTitle, TweakWinTitle, ahk_id %TweakWin%
-
-If ( RegExMatch( TweakWinTitle, "^.* \(Not Responding\)$" ) )
+killApp(hwnd)
 {
-	SoundPlay, %ProgramFiles%\DBN\hlwavpak\remote_yes.wav
-	Sleep, 300
-	WinGetTitle, Title, A
-	StringTrimRight, Title, Title, StrLen(" (Not Responding)")
-	SetTitleMatchMode, 3
-	DetectHiddenWindows, On
-	IfWinExist, %Title%
-		WinGet, TweakPID, PID, %Title%
-	else
+	IfWinExist ahk_id %hwnd%
 	{
-		SoundPlay, %ProgramFiles%\DBN\hlwavpak\click1.wav
-		Title := ""
-		return
+		WinGetClass class
+		if !(class == "Ghost")
+			WinGet, pid, PID
+		else
+		{
+			hwnd := HungWindowFromGhostWindow(WinExist())
+			if hwnd
+				WinGet, pid, PID, ahk_id %hwnd%
+		}
 	}
-	Title := ""
-}
+	if !pid
+		return false
 
-WinGet, TweakPID, PID, ahk_id %TweakWin%
-if ( !TweakPID )
-{
-	Msgbox, 16, Error, Unable to determine what program this window belongs to.
-	return
+	Process, Close, %pid%
+	return ErrorLevel ? false : true
 }
-
-Process, Close, %TweakPID%
-if ( errorlevel )
-	SoundPlay, %ProgramFiles%\DBN\hlwavpak\die.wav
-else
-	SoundPlay, %ProgramFiles%\DBN\hlwavpak\alarm.wav
-TweakPID := ""
-*/
-return
+; these two functions are undocumented
+HungWindowFromGhostWindow(hwnd) {
+	return DllCall("HungWindowFromGhostWindow", "Ptr", hwnd, "Ptr")
+}
+;GhostWindowFromHungWindow(hwnd) {
+;	return DllCall("GhostWindowFromHungWindow", "Ptr", hwnd, "Ptr")
+;}
 
 
 
@@ -383,24 +425,23 @@ Prompt( Question, YesNo = true )
 ;	Menu, DeleteAll, 
 }
 
-WinMoveClientArea(WindowID, W, H, X = "", Y = "")
+WinMoveClientArea( WindowID, W, H, X = "", Y = "" )
 {
 	WinGetPos, WindowX, WindowY, WindowW, WindowH, ahk_id %WindowID%
 
-	; used as a POINT for ClientToScreen and a RECT for GetClientRect
-	if VarSetCapacity(STRUCT, 16, 0) < 16
-		return
+	VarSetCapacity( Structure, 8, 0 ) ; 0,0
+	DllCall("ClientToScreen", "UInt", WindowID, "UInt", &Structure )
+	WindowFrameL := NumGet( Structure, 0, "Int" ) - WindowX
+	WindowFrameT := NumGet( Structure, 4, "Int" ) - WindowY
 
-	DllCall("ClientToScreen", "Ptr", WindowID, "Ptr", &STRUCT) ; 0,0
-	WindowFrameL := NumGet(STRUCT, 0, "Int") - WindowX
-	WindowFrameT := NumGet(STRUCT, 4, "Int") - WindowY
+	VarSetCapacity( Structure, 16 )
+	DllCall("GetClientRect", "UInt", WindowID, "UInt", &Structure )
+	CanvasW := NumGet( Structure, 8, "Int" )
+	CanvasH := NumGet( Structure, 12, "Int" )
+	Structure =
 
-	DllCall("GetClientRect", "Ptr", WindowID, "Ptr", &STRUCT)
-	ClientW := NumGet(STRUCT,  8, "Int")
-	ClientH := NumGet(STRUCT, 12, "Int")
-
-	WindowFrameR := WindowW - ClientW - WindowFrameL
-	WindowFrameB := WindowH - ClientH - WindowFrameT
+	WindowFrameR := WindowW - CanvasW - WindowFrameL
+	WindowFrameB := WindowH - CanvasH - WindowFrameT
 	
 	if X !=
 		X -= WindowFrameL
