@@ -425,23 +425,24 @@ Prompt( Question, YesNo = true )
 ;	Menu, DeleteAll, 
 }
 
-WinMoveClientArea( WindowID, W, H, X = "", Y = "" )
+WinMoveClientArea(WindowID, W, H, X = "", Y = "")
 {
 	WinGetPos, WindowX, WindowY, WindowW, WindowH, ahk_id %WindowID%
 
-	VarSetCapacity( Structure, 8, 0 ) ; 0,0
-	DllCall("ClientToScreen", "UInt", WindowID, "UInt", &Structure )
-	WindowFrameL := NumGet( Structure, 0, "Int" ) - WindowX
-	WindowFrameT := NumGet( Structure, 4, "Int" ) - WindowY
+	; used as a POINT for ClientToScreen and a RECT for GetClientRect
+	if VarSetCapacity(STRUCT, 16, 0) < 16
+		return
 
-	VarSetCapacity( Structure, 16 )
-	DllCall("GetClientRect", "UInt", WindowID, "UInt", &Structure )
-	CanvasW := NumGet( Structure, 8, "Int" )
-	CanvasH := NumGet( Structure, 12, "Int" )
-	Structure =
+	DllCall("ClientToScreen", "Ptr", WindowID, "Ptr", &STRUCT) ; 0,0
+	WindowFrameL := NumGet(STRUCT, 0, "Int") - WindowX
+	WindowFrameT := NumGet(STRUCT, 4, "Int") - WindowY
 
-	WindowFrameR := WindowW - CanvasW - WindowFrameL
-	WindowFrameB := WindowH - CanvasH - WindowFrameT
+	DllCall("GetClientRect", "Ptr", WindowID, "Ptr", &STRUCT)
+	ClientW := NumGet(STRUCT,  8, "Int")
+	ClientH := NumGet(STRUCT, 12, "Int")
+
+	WindowFrameR := WindowW - ClientW - WindowFrameL
+	WindowFrameB := WindowH - ClientH - WindowFrameT
 	
 	if X !=
 		X -= WindowFrameL
