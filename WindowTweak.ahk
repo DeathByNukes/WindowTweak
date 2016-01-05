@@ -1,7 +1,7 @@
-#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+#NoEnv
 SetBatchLines, -1
-SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
-SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+SendMode Input
+SetWorkingDir %A_ScriptDir%
 Menu, TRAY, Icon, %A_WinDir%\system32\shell32.dll, 166
 SetWinDelay, -1
 SetControlDelay, -1
@@ -108,7 +108,9 @@ Loop, 2
 }
 Menu, Tweak, Add, &Fullscreen, TweakFullscreen
 Menu, Tweak, Add, UnFullscreen, TweakUnFullscreen
+Menu, Tweak, Add, Center, TweakCenter
 Menu, Tweak, Add, Move To 0`,0, TweakMove00
+Menu, Tweak, Add, Maximum Width, TweakMaxWidth
 Menu, Tweak, Add, Get Style, TweakGetStyle
 Menu, Tweak, Add, Get ExStyle, TweakGetExStyle
 Menu, Tweak, Add, Get Controls, TweakGetControls
@@ -118,21 +120,15 @@ Menu, Tweak, Add, &Close, TweakClose
 Menu, Tweak, Add, Kill Process, :TweakKill
 
 
-return
+; set a default so we don't have to check whether it's set
+TweakLastCommand = TweakGetStyle
 
+click_sound = %ProgramFiles%\DBN\hlwavpak\click.wav
+IfNotExist %click_sound%
+	click_sound = *64
 
-^!#Space::
-; +#Space::
-	if TweakLastCommand =
-	{
-		SoundPlay, *16
-		return
-	}
-	SoundPlay, %ProgramFiles%\DBN\hlwavpak\click.wav
-	MouseGetPos, TweakX, TweakY, TweakWin, TweakControl, 2
-	PixelGetColor, TweakColor, TweakX, TweakY, RGB
-	Goto, %TweakLastCommand%
-return
+return ; ---------------------------------------------------------------------------------
+
 
 !#Space::
 ; #Space::
@@ -141,6 +137,7 @@ return
 	Menu, Tweak, Show
 return
 
+; acts on an individual control rather than the whole window
 ^#Space::
 	TweakControl =
 	MouseGetPos, TweakX, TweakY,, TweakWin, 2
@@ -148,84 +145,58 @@ return
 	Menu, Tweak, Show
 return
 
+; re-runs the last selected menu item at the current cursor position
+^!#Space::
+; +#Space::
+	SoundPlay %click_sound%
+	MouseGetPos, TweakX, TweakY, TweakWin, TweakControl, 2
+	PixelGetColor, TweakColor, TweakX, TweakY, RGB
+	Goto %TweakLastCommand%
+return
+
+TweakInvoked()
+{
+	global
+	TweakLastCommand := A_ThisLabel
+	IfWinNotExist ahk_id %TweakWin% ; set the last found window
+		SoundPlay *16
+}
+
 
 TweakTransColor100:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, TransColor, %TweakColor%, ahk_id %TweakWin%
+	TweakInvoked()
+	WinSet, TransColor, %TweakColor%
 return
 
 TweakTransColor75:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, TransColor, %TweakColor% 191, ahk_id %TweakWin%
-return
-
 TweakTransColor50:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, TransColor, %TweakColor% 128, ahk_id %TweakWin%
-return
-
 TweakTransColor25:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, TransColor, %TweakColor% 61, ahk_id %TweakWin%
+	TweakInvoked()
+	WinSet, TransColor, % TweakColor " " round(SubStr(A_ThisLabel,16)/100*255)
 return
 
 TweakTransColor0:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, TransColor, OFF, ahk_id %TweakWin%
+	TweakInvoked()
+	WinSet, TransColor, OFF
 return
 
 TweakResize640x480:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 640, 480 )
-return
-
 TweakResize800x600:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 800, 600 )
-return
-
 TweakResize1024x768:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 1024, 768 )
-return
-
 TweakResize1152x864:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 1152, 864 )
-return
-
 TweakResize1280x720:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 1280, 720 )
-return
-
 TweakResize1280x1024:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 1280, 1024 )
-return
-
 TweakResize1600x900:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 1600, 900 )
-return
-
 TweakResize1600x1200:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 1600, 1200 )
-return
-
 TweakResize1920x1080:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 1920, 1080 )
-return
-
 TweakResize1920x1200:
-TweakLastCommand = %A_ThisLabel%
-	WinMoveClientArea( TweakWin, 1920, 1200 )
+	TweakInvoked()
+	WinMoveClientArea( bisect(SubStr(A_ThisLabel,12), "x", h)
+	                 , h)
 return
 
 TweakResizeCustom:
-TweakLastCommand = %A_ThisLabel%
+	TweakInvoked()
 	if TweakResizeCustom_Ok !=
 		return
 
@@ -244,7 +215,7 @@ TweakLastCommand = %A_ThisLabel%
 	Gui, 70:Destroy
 
 	if TweakResizeCustom_Ok = 1
-		WinMoveClientArea( TweakWin, TweakResizeCustom_X, TweakResizeCustom_Y )
+		WinMoveClientArea(TweakResizeCustom_X, TweakResizeCustom_Y)
 	
 	TweakResizeCustom_Ok =
 return
@@ -262,115 +233,148 @@ TweakResizeCustom_Ok:
 			return
 		}
 	}
-	SoundPlay, *16
+	SoundPlay *16
 return
 
 
-TweakStyleChange( Style ) {
-	return ( SubStr( A_ThisLabel, 11, 3 ) = "Add" ? "+" : "-" ) . Style
+TweakStyleChange(num, attribute = "Style") {
+	WinSet, %attribute%, % (TweakStyleIsAdd() ? "+" : "-") num
 }
 TweakStyleIsAdd() {
-	return SubStr( A_ThisLabel, 11, 3 ) = "Add"
+	return SubStr(A_ThisLabel,11,3) == "Add"
 }
 
 TweakStyleAddCaption:
 TweakStyleDelCaption:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, Style, % TweakStyleChange(0xC00000), ahk_id %TweakWin%
+	TweakInvoked()
+	TweakStyleChange(0xC00000)
 return
 
 TweakStyleAddBorder:
 TweakStyleDelBorder:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, Style, % TweakStyleChange(0x800000), ahk_id %TweakWin%
+	TweakInvoked()
+	TweakStyleChange(0x800000)
 return
 
 TweakStyleAddDlgframe:
 TweakStyleDelDlgframe:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, Style, % TweakStyleChange(0x400000), ahk_id %TweakWin%
+	TweakInvoked()
+	TweakStyleChange(0x400000)
 return
 
 TweakStyleAddMaximizebox:
 TweakStyleDelMaximizebox:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, Style, % TweakStyleChange(0x10000), ahk_id %TweakWin%
+	TweakInvoked()
+	TweakStyleChange(0x10000)
 return
 
 TweakStyleAddMinimizebox:
 TweakStyleDelMinimizebox:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, Style, % TweakStyleChange(0x20000), ahk_id %TweakWin%
+	TweakInvoked()
+	TweakStyleChange(0x20000)
 return
 
 TweakStyleAddSizebox:
 TweakStyleDelSizebox:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, Style, % TweakStyleChange(0x40000), ahk_id %TweakWin%
+	TweakInvoked()
+	TweakStyleChange(0x40000)
 return
 
 TweakStyleAddSysmenu:
 TweakStyleDelSysmenu:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, Style, % TweakStyleChange(0x80000), ahk_id %TweakWin%
+	TweakInvoked()
+	TweakStyleChange(0x80000)
 return
 
 TweakStyleAddDisabled:
 TweakStyleDelDisabled:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, Style, % TweakStyleChange(0x8000000), ahk_id %TweakWin%
+	TweakInvoked()
+	TweakStyleChange(0x8000000)
 return
 TweakStyleAddAlwaysOnTop:
 TweakStyleDelAlwaysOnTop:
-TweakLastCommand = %A_ThisLabel%
-	WinSet, AlwaysOnTop, % TweakStyleIsAdd() ? "On" : "Off", ahk_id %TweakWin%
+	TweakInvoked()
+	WinSet, AlwaysOnTop, % TweakStyleIsAdd() ? "On" : "Off"
 	if ErrorLevel
 		SoundPlay *16
 return
 
 
 TweakFullscreen:
-TweakLastCommand = %A_ThisLabel%
-WinSet, Style, -0xC00000, ahk_id %TweakWin%
-WinSet, Style, -0x40000, ahk_id %TweakWin%
-SysGet, Primary, Monitor
-WinGetClass, TweakWinClass, ahk_id %TweakWin%
-if TweakWinClass = Photo_Lightweight_Viewer
+	TweakInvoked()
+	_TweakFullscreen()
+return
+_TweakFullscreen()
 {
-	PrimaryTop -= 30
-	PrimaryBottom += 157 - 130
+	WinMaximize
+	WinSet, Style, -0xC00000
+	WinSet, Style, -0x40000
+	SysGet, m, Monitor
+	WinGetClass, TweakWinClass
+	if TweakWinClass = Photo_Lightweight_Viewer
+	{
+		mTop -= 30
+		mBottom += 157 - 130
+	}
+	WinMoveClientArea(mRight - mLeft, mBottom - mTop, mLeft, mTop)
 }
 
-WinMoveClientArea( TweakWin, PrimaryRight - PrimaryLeft, PrimaryBottom - PrimaryTop, PrimaryLeft, PrimaryTop )
-;WinMove, ahk_id %TweakWin%,, PrimaryLeft, PrimaryTop, 1920, 1200
-PrimaryLeft =
-PrimaryTop =
-PrimaryRight =
-PrimaryBottom =
-return
-
 TweakUnFullscreen:
-TweakLastCommand = %A_ThisLabel%
-WinSet, Style, +0xC00000, ahk_id %TweakWin%
-WinSet, Style, +0x40000, ahk_id %TweakWin%
+	TweakInvoked()
+	WinSet, Style, +0xC00000
+	WinSet, Style, +0x40000
+	WinRestore
 return
 
 TweakMove00:
-TweakLastCommand = %A_ThisLabel%
-WinMoveClientArea( TweakWin, "", "", 0, 0 )
+	TweakInvoked()
+	WinMoveClientArea("", "", 0, 0)
 return
 
+TweakCenter:
+	TweakInvoked()
+	_TweakCenter()
+return
+_TweakCenter()
+{
+	global TweakWin
+	monitor := MonitorIndexFromWindow(TweakWin)
+	if monitor =
+	{
+		SoundPlay *16
+		return
+	}
+	SysGet, m, Monitor, %monitor%
+	WinMoveClientCenter(mLeft + (mRight-mLeft)//2, mTop + (mBottom-mTop)//2)
+}
+
+TweakMaxWidth:
+	TweakInvoked()
+	_TweakMaxWidth()
+return
+_TweakMaxWidth()
+{
+	global TweakWin
+	monitor := MonitorIndexFromWindow(TweakWin)
+	if monitor =
+	{
+		SoundPlay *16
+		return
+	}
+	SysGet, m, Monitor, %monitor%
+	WinMoveClientArea(mRight - mLeft, "", mLeft, "")
+}
 
 
 TweakGetStyle:
 TweakGetExStyle:
-TweakLastCommand = %A_ThisLabel%
-	WinGet, TweakExStyle, ExStyle, ahk_id %TweakWin%
+	TweakInvoked()
+	WinGet, TweakExStyle, ExStyle
 	;Loop
 return
 
 TweakGetControls:
-	WinGet, tmp, ControlList, ahk_id %TweakWin%
+	WinGet, tmp, ControlList
 	MsgBox, 0, %A_ScriptName%, %tmp%
 	tmp=
 return
@@ -378,12 +382,12 @@ return
 
 
 TweakClose:
-TweakLastCommand = %A_ThisLabel%
-	WinClose, ahk_id %TweakWin%
+	TweakInvoked()
+	WinClose
 return
 
 TweakKillWin:
-TweakLastCommand = %A_ThisLabel%
+	TweakInvoked()
 	killApp(TweakWin)
 return
 
@@ -416,42 +420,134 @@ HungWindowFromGhostWindow(hwnd) {
 ;}
 
 
-
-Prompt( Question, YesNo = true )
+WinMoveClientArea(W, H, X = "", Y = "")
 {
-	;MsgBox, % YesNo ? 4 : 1, %Title%, %Question%
-
-;	static 
-;	Menu, DeleteAll, 
-}
-
-WinMoveClientArea(WindowID, W, H, X = "", Y = "")
-{
-	WinGetPos, WindowX, WindowY, WindowW, WindowH, ahk_id %WindowID%
-
-	; used as a POINT for ClientToScreen and a RECT for GetClientRect
-	if VarSetCapacity(STRUCT, 16, 0) < 16
+	WinGetPos, WindowX, WindowY, WindowW, WindowH
+	if (WindowX == "" || !WinGetClientPos(WinExist(), FrameL, FrameT, ClientW, ClientH))
+	{
+		SoundPlay *64
 		return
-
-	DllCall("ClientToScreen", "Ptr", WindowID, "Ptr", &STRUCT) ; 0,0
-	WindowFrameL := NumGet(STRUCT, 0, "Int") - WindowX
-	WindowFrameT := NumGet(STRUCT, 4, "Int") - WindowY
-
-	DllCall("GetClientRect", "Ptr", WindowID, "Ptr", &STRUCT)
-	ClientW := NumGet(STRUCT,  8, "Int")
-	ClientH := NumGet(STRUCT, 12, "Int")
-
-	WindowFrameR := WindowW - ClientW - WindowFrameL
-	WindowFrameB := WindowH - ClientH - WindowFrameT
+	}
+	FrameL -= WindowX
+	FrameT -= WindowY
+	FrameR := WindowW - ClientW - FrameL
+	FrameB := WindowH - ClientH - FrameT
 	
 	if X !=
-		X -= WindowFrameL
+		X -= FrameL
 	if Y !=
-		Y -= WindowFrameT
+		Y -= FrameT
 	if W !=
-		W += WindowFrameL + WindowFrameR
+		W += FrameL + FrameR
 	if H !=
-		H += WindowFrameT + WindowFrameB
+		H += FrameT + FrameB
+
+	WinMove,,, X, Y, W, H
+}
+WinMoveClientCenter(X, Y)
+{
+	WinGetPos, WindowX, WindowY, WindowW, WindowH
+	if (WindowX == "" || !WinGetClientPos(WinExist(), FrameL, FrameT, ClientW, ClientH))
+	{
+		SoundPlay *64
+		return
+	}
+	FrameL -= WindowX
+	FrameT -= WindowY
 	
-	WinMove, ahk_id %WindowID%,, X, Y, W, H
+	if X !=
+		X -= FrameL + ClientW//2
+	if Y !=
+		Y -= FrameT + ClientH//2
+	
+	WinMove,,, X, Y
+}
+
+WinGetClientPos(hwnd, ByRef x, ByRef y, ByRef w, ByRef h)
+{
+	; STRUCT is used as a POINT for ClientToScreen and a RECT for GetClientRect
+	if VarSetCapacity(STRUCT, 16, 0) < 16
+	|| !DllCall("ClientToScreen", "Ptr", hwnd, "Ptr", &STRUCT) ; 0,0
+	{
+		x=
+		y=
+		w=
+		h=
+		return false
+	}
+	x := NumGet(STRUCT, 0, "Int")
+	y := NumGet(STRUCT, 4, "Int")
+
+	if !DllCall("GetClientRect", "Ptr", hwnd, "Ptr", &STRUCT)
+	{
+		w=
+		h=
+		return false
+	}
+	w := NumGet(STRUCT,  8, "Int")
+	h := NumGet(STRUCT, 12, "Int")
+	return true
+}
+
+;#define MONITOR_DEFAULTTONULL 0 
+;#define MONITOR_DEFAULTTOPRIMARY 1 
+;#define MONITOR_DEFAULTTONEAREST 2
+MonitorFromWindow(hwnd, option = 2)
+{
+	return DllCall("MonitorFromWindow", "Ptr", hwnd, "UInt", option, "Ptr")
+}
+MonitorIndexFromWindow(hwnd, option = 2)
+{
+	hmonitor := MonitorFromWindow(hwnd, option)
+	if (hmonitor == 0)
+		return ""
+	return MonitorHandleToIndex(hmonitor)
+}
+
+; converts a WinAPI HMONITOR to a monitor index acceptable by AHK's SysGet
+MonitorHandleToIndex(hmonitor)
+{
+	global MonitorHandleToIndex__counter
+	static callback
+	Critical
+	if callback =
+	{
+		callback := RegisterCallback("MonitorHandleToIndex__callback", "F")
+		if callback =
+			goto %crash%
+	}
+
+	; AHK's monitor indices are based on the order monitors are returned from EnumDisplayMonitors
+	MonitorHandleToIndex__counter := 0
+	success := DllCall("EnumDisplayMonitors", "Ptr", 0, "Ptr", 0, "Ptr", callback, "Ptr", hmonitor)
+	if success =
+		goto %crash%
+	result := MonitorHandleToIndex__counter
+	MonitorHandleToIndex__counter =
+	Critical Off
+	; EnumDisplayMonitors returns failure if the callback aborted the enumeration, which our callback does when it finds the right monitor
+	if (success || result == 0)
+		return ""
+	return result
+}
+MonitorHandleToIndex__callback(hMonitor, hdcMonitor, lprcMonitor, dwData)
+{
+	global MonitorHandleToIndex__counter
+	++MonitorHandleToIndex__counter
+	; dwData is the 4th argument supplied to EnumDisplayMonitors, "hmonitor" 
+	return dwData != hMonitor ; abort enumeration if it's the one we're looking for
+}
+
+bisect(string, delimiter, ByRef out_second_half, occurence = "L1", offset = 0)
+{
+	StringGetPos, pos, string, %delimiter%, %occurence%, offset
+	if ErrorLevel
+	{
+		out_second_half := ""
+		return string
+	}
+	; pos is 0-based, StringMid and SubStr are 1-based
+	StringMid, out_second_half, string, pos + 1 + StrLen(delimiter)
+	ErrorLevel := 0
+	return SubStr(string, 1, pos)
 }
