@@ -92,6 +92,8 @@ TweakX = Add
 TweakY = Add
 Loop, 2
 {
+		Menu, TweakStyle%TweakX%, Add, Always On Top, TweakStyle%TweakX%AlwaysOnTop
+		Menu, TweakStyle%TweakX%, Add, Disabled, TweakStyle%TweakX%Disabled
 		Menu, TweakStyle%TweakX%, Add, Standard Title Bar (border + dialog frame), TweakStyle%TweakX%Caption
 		Menu, TweakStyle%TweakX%, Add, Border, TweakStyle%TweakX%Border
 		Menu, TweakStyle%TweakX%, Add, Dialog Box Frame, TweakStyle%TweakX%Dlgframe
@@ -99,8 +101,6 @@ Loop, 2
 		Menu, TweakStyle%TweakX%, Add, Minimize Button, TweakStyle%TweakX%Minimizebox
 		Menu, TweakStyle%TweakX%, Add, Resizable, TweakStyle%TweakX%Sizebox
 		Menu, TweakStyle%TweakX%, Add, System Menu, TweakStyle%TweakX%Sysmenu
-		Menu, TweakStyle%TweakX%, Add, Disabled, TweakStyle%TweakX%Disabled
-		Menu, TweakStyle%TweakX%, Add, Always On Top, TweakStyle%TweakX%AlwaysOnTop
 		;Menu, TweakStyle%TweakX%, Add, , TweakStyle%TweakX%
 	Menu, Tweak, Add, %TweakY% Styles, :TweakStyle%TweakX%
 	TweakX = Del
@@ -110,7 +110,7 @@ Menu, Tweak, Add, &Fullscreen, TweakFullscreen
 Menu, Tweak, Add, UnFullscreen, TweakUnFullscreen
 Menu, Tweak, Add, Center, TweakCenter
 Menu, Tweak, Add, Move To 0`,0, TweakMove00
-Menu, Tweak, Add, Maximum Width, TweakMaxWidth
+Menu, Tweak, Add, Maximum &Width, TweakMaxWidth
 Menu, Tweak, Add, Get Style, TweakGetStyle
 Menu, Tweak, Add, Get ExStyle, TweakGetExStyle
 Menu, Tweak, Add, Get Controls, TweakGetControls
@@ -159,7 +159,10 @@ TweakInvoked()
 	global
 	TweakLastCommand := A_ThisLabel
 	IfWinNotExist ahk_id %TweakWin% ; set the last found window
+	{
 		SoundPlay *16
+		Exit
+	}
 }
 
 
