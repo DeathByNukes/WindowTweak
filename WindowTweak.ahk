@@ -106,6 +106,8 @@ Loop, 2
 	TweakX = Del
 	TweakY = Remove
 }
+Menu, Tweak, Add, Set Text, TweakText
+Menu, Tweak, Add, Enable and Click, TweakClick
 Menu, Tweak, Add, &Fullscreen, TweakFullscreen
 Menu, Tweak, Add, UnFullscreen, TweakUnFullscreen
 Menu, Tweak, Add, Center, TweakCenter
@@ -300,6 +302,27 @@ TweakStyleDelAlwaysOnTop:
 	WinSet, AlwaysOnTop, % TweakStyleIsAdd() ? "On" : "Off"
 	if ErrorLevel
 		SoundPlay *16
+return
+
+
+TweakText:
+	TweakInvoked()
+	_TweakText()
+return
+_TweakText()
+{
+	WinGetTitle text
+	InputBox, text, Set Text, Change the "text" attribute:,,,,,,,, %text%
+	if ErrorLevel
+		return
+	WinSetTitle %text%
+}
+
+
+TweakClick:
+	TweakInvoked()
+	WinSet, Style, -0x8000000
+	ControlClick,, ahk_id %TweakWin%,,,, NA
 return
 
 
