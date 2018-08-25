@@ -11,6 +11,18 @@ CoordMode, Mouse, Screen
 CoordMode, Caret, Screen
 CoordMode, Menu, Screen
 
+if !A_IsAdmin
+	Menu, TRAY, Add, Run as &administrator, RunAsAdmin
+loop 0
+{
+RunAsAdmin:
+    if A_IsCompiled
+        Run *RunAs "%A_ScriptFullPath%" /restart
+    else
+        Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%"
+return
+}
+
 
 /*
 *
