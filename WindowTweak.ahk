@@ -299,9 +299,13 @@ return
 TweakStyleAddAlwaysOnTop:
 TweakStyleDelAlwaysOnTop:
 	TweakInvoked()
-	WinSet, AlwaysOnTop, % TweakStyleIsAdd() ? "On" : "Off"
-	if ErrorLevel
-		SoundPlay *16
+	Loop 4
+	{
+		WinSet, AlwaysOnTop, % TweakStyleIsAdd() ? "On" : "Off"
+		if ErrorLevel
+			SoundPlay *16
+		Sleep 200
+	}
 return
 
 
