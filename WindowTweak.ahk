@@ -217,8 +217,10 @@ TweakResizeCustom:
 	if TweakResizeCustom_Ok !=
 		return
 
-	Gui, 70:Add, Edit, x6 y10 w90 h20 vTweakResizeCustom_X, 
-	Gui, 70:Add, Edit, x116 y10 w90 h20 vTweakResizeCustom_Y, 
+	WinGetClientPos(TweakWin, 0+0, 0+0, TweakResizeCustom_X, TweakResizeCustom_Y)
+
+	Gui, 70:Add, Edit, x6 y10 w90 h20 vTweakResizeCustom_X, %TweakResizeCustom_X%
+	Gui, 70:Add, Edit, x116 y10 w90 h20 vTweakResizeCustom_Y, %TweakResizeCustom_Y%
 	Gui, 70:Add, Text, x103 y12 w10 h15 , x
 	Gui, 70:Add, Button, x216 y9 w75 h23 Default gTweakResizeCustom_Ok, &OK
 	; Generated using SmartGUI Creator 4.0 :D
