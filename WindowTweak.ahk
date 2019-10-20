@@ -88,6 +88,8 @@ return
 	Menu, TweakTransColor, Add, No Transparency, TweakTransColor0
 Menu, Tweak, Add, Transparent Color, :TweakTransColor
 	Menu, TweakResize, Add, Resize Custom, TweakResizeCustom
+	Menu, TweakResize, Add, Copy Dimensions, TweakResizeCopy
+	Menu, TweakResize, Add, Paste Dimensions, TweakResizePaste
 	Menu, TweakResize, Add, Resize 640x480, TweakResize640x480
 	Menu, TweakResize, Add, Resize 800x600, TweakResize800x600
 	Menu, TweakResize, Add, Resize 1024x768, TweakResize1024x768
@@ -212,6 +214,19 @@ TweakResize1920x1200:
 	                 , h)
 return
 
+TweakResizeCopy:
+	TweakInvoked()
+	Clipboard := TweakResizeRead(TweakWin)
+return
+
+TweakResizePaste:
+	TweakInvoked()
+	if TweakResizeParse(Clipboard, TweakResizeCustom_X, TweakResizeCustom_Y)
+		WinMoveClientArea(TweakResizeCustom_X, TweakResizeCustom_Y)
+	else
+		SoundPlay *16
+return
+
 TweakResizeCustom:
 	TweakInvoked()
 	if TweakResizeCustom_Ok !=
@@ -242,13 +257,27 @@ TweakResizeCustomClose:
 return
 TweakResizeCustom_Ok:
 	Gui, Submit, Nohide
-	if RegExMatch(TweakResizeCustom_Size, "^\s*[a-zA-Z]*\s*(?P<X>\d+)(?:\s*|\s*[a-zA-Z]+\s*|\s*,\s*)(?P<Y>\d+)\s*$", TweakResizeCustom_)
+	if TweakResizeParse(TweakResizeCustom_Size, TweakResizeCustom_X, TweakResizeCustom_Y)
 	{
 		TweakResizeCustom_Ok = 1
 		return
 	}
 	SoundPlay *16
 return
+
+TweakResizeRead(TweakWin)
+{
+	WinGetClientPos(TweakWin, 0+0, 0+0, w, h)
+	return w " x " h
+}
+TweakResizeParse(input, ByRef w, ByRef h)
+{
+	if !RegExMatch(input, "^\s*[a-zA-Z]*\s*(?P<w>\d+)(?:\s*|\s*[a-zA-Z]+\s*|\s*,\s*)(?P<h>\d+)\s*$", match_)
+		return false
+	w := match_w
+	h := match_h
+	return true
+}
 
 
 TweakStyleChange(num, attribute = "Style") {
