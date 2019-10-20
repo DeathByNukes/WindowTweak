@@ -219,9 +219,7 @@ TweakResizeCustom:
 
 	WinGetClientPos(TweakWin, 0+0, 0+0, TweakResizeCustom_X, TweakResizeCustom_Y)
 
-	Gui, 70:Add, Edit, x6 y10 w90 h20 vTweakResizeCustom_X, %TweakResizeCustom_X%
-	Gui, 70:Add, Edit, x116 y10 w90 h20 vTweakResizeCustom_Y, %TweakResizeCustom_Y%
-	Gui, 70:Add, Text, x103 y12 w10 h15 , x
+	Gui, 70:Add, Edit, x6 y10 w200 h20 vTweakResizeCustom_Size, %TweakResizeCustom_X% x %TweakResizeCustom_Y%
 	Gui, 70:Add, Button, x216 y9 w75 h23 Default gTweakResizeCustom_Ok, &OK
 	; Generated using SmartGUI Creator 4.0 :D
 	Gui, 70:+LabelTweakResizeCustom +ToolWindow +AlwaysOnTop
@@ -244,13 +242,10 @@ TweakResizeCustomClose:
 return
 TweakResizeCustom_Ok:
 	Gui, Submit, Nohide
-	if TweakResizeCustom_X is integer
+	if RegExMatch(TweakResizeCustom_Size, "^\s*[a-zA-Z]*\s*(?P<X>\d+)(?:\s*|\s*[a-zA-Z]+\s*|\s*,\s*)(?P<Y>\d+)\s*$", TweakResizeCustom_)
 	{
-		if TweakResizeCustom_Y is integer
-		{
-			TweakResizeCustom_Ok = 1
-			return
-		}
+		TweakResizeCustom_Ok = 1
+		return
 	}
 	SoundPlay *16
 return
