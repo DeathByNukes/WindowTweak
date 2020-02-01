@@ -11,6 +11,15 @@ CoordMode, Mouse, Screen
 CoordMode, Caret, Screen
 CoordMode, Menu, Screen
 
+; have to be high DPI aware to work with real window coordinates
+EnvGet, __COMPAT_LAYER, __COMPAT_LAYER
+IfNotInString, __COMPAT_LAYER, HIGHDPIAWARE
+{
+	__COMPAT_LAYER .= (__COMPAT_LAYER = "" ? "" : " ") "HIGHDPIAWARE"
+	EnvSet, __COMPAT_LAYER, %__COMPAT_LAYER%
+	Reload
+}
+
 if !A_IsAdmin
 	Menu, TRAY, Add, Run as &administrator, RunAsAdmin
 loop 0
@@ -90,6 +99,8 @@ Menu, Tweak, Add, Transparent Color, :TweakTransColor
 	Menu, TweakResize, Add, Resize Custom, TweakResizeCustom
 	Menu, TweakResize, Add, Copy Dimensions, TweakResizeCopy
 	Menu, TweakResize, Add, Paste Dimensions, TweakResizePaste
+	Menu, TweakResize, Add, Resize "Normal", TweakResizeNormal
+	Menu, TweakResize, Add, Resize "Normal" (centered), TweakResizeNormalCentered
 	Menu, TweakResize, Add, Resize 640x480, TweakResize640x480
 	Menu, TweakResize, Add, Resize 800x600, TweakResize800x600
 	Menu, TweakResize, Add, Resize 1024x768, TweakResize1024x768
@@ -279,6 +290,20 @@ TweakResizeParse(input, ByRef w, ByRef h)
 	return true
 }
 
+TweakResizeNormal:
+TweakResizeNormalCentered:
+	TweakInvoked()
+	m := GetMonitorInfo(MonitorFromPoint(TweakX, TweakY, 1))
+	m.w := m.work_right - m.work_left
+	m.h := m.work_bottom - m.work_top
+	w := {w: m.w * 0.75, h: m.h * 0.75}
+	if A_ThisLabel = TweakResizeNormalCentered
+	{
+		w.x := m.work_left + m.w * 0.125
+		w.y := m.work_top + m.h * 0.125
+	}
+	WinMove,,, w.x, w.y, w.w, w.h
+return
 
 TweakStyleChange(num, attribute = "Style") {
 	WinSet, %attribute%, % (TweakStyleIsAdd() ? "+" : "-") num
@@ -557,13 +582,15 @@ WinGetClientPos(hwnd, ByRef x, ByRef y, ByRef w, ByRef h)
 	return true
 }
 
-;#define MONITOR_DEFAULTTONULL 0 
-;#define MONITOR_DEFAULTTOPRIMARY 1 
-;#define MONITOR_DEFAULTTONEAREST 2
-MonitorFromWindow(hwnd, option = 2)
-{
-	return DllCall("MonitorFromWindow", "Ptr", hwnd, "UInt", option, "Ptr")
+
+; 0 = MONITOR_DEFAULTTONULL, 1 = MONITOR_DEFAULTTOPRIMARY, 2 = MONITOR_DEFAULTTONEAREST
+MonitorFromWindow(hwnd, dwFlags = 2) {
+	return DllCall("User32\MonitorFromWindow", "Ptr", hwnd, "UInt", dwFlags, "Ptr")
 }
+MonitorFromPoint(x, y, dwFlags = 2) {
+	return DllCall("User32\MonitorFromPoint", "Int64", ((y & 0xFFFFFFFF) << 32) | (x & 0xFFFFFFFF), "UInt", dwFlags, "Ptr")
+}
+
 MonitorIndexFromWindow(hwnd, option = 2)
 {
 	hmonitor := MonitorFromWindow(hwnd, option)
@@ -606,6 +633,43 @@ MonitorHandleToIndex__callback(hMonitor, hdcMonitor, lprcMonitor, dwData)
 	return dwData != hMonitor ; abort enumeration if it's the one we're looking for
 }
 
+GetMonitorInfo(hMonitor)
+{
+	;MONITORINFO:
+	/* 
+		4 UInt cbSize
+
+		4 Int rcMonitor.left
+		4 Int rcMonitor.top
+		4 Int rcMonitor.right
+		4 Int rcMonitor.bottom
+
+		4 Int rcWork.left
+		4 Int rcWork.top
+		4 Int rcWork.right
+		4 Int rcWork.bottom
+
+		4 UInt dwFlags
+	*/
+	if VarSetCapacity(MONITORINFO, 40) < 40
+		throw "out of memory"
+	NumPut(40, MONITORINFO, 0, "UInt") ; set cbSize
+
+	if !DllCall("User32\GetMonitorInfo", "Ptr", hMonitor, "Ptr", &MONITORINFO)
+	{
+		if ErrorLevel
+			throw "GetMonitorInfo DllCall failed: " ErrorLevel
+		throw LastErrorException("GetMonitorInfo failed: ")
+	}
+
+	out := {}
+	static names = ["left", "top", "right", "bottom", "work_left", "work_top", "work_right", "work_bottom"]
+	for i,name in names
+		out[name] := NumGet(MONITORINFO, i*4, "Int")
+	out.flags := NumGet(MONITORINFO, 36, "UInt")
+	return out
+}
+
 bisect(string, delimiter, ByRef out_second_half, occurence = "L1", offset = 0)
 {
 	StringGetPos, pos, string, %delimiter%, %occurence%, offset
@@ -618,4 +682,29 @@ bisect(string, delimiter, ByRef out_second_half, occurence = "L1", offset = 0)
 	StringMid, out_second_half, string, pos + 1 + StrLen(delimiter)
 	ErrorLevel := 0
 	return SubStr(string, 1, pos)
+}
+
+LastErrorException(prefix = "", what = -2, extra = "") {
+	return Exception(prefix LastErrorString(), what, extra)
+}
+LastErrorString(number = "")
+{
+	; probably x64 and unicode compatible
+	if number =
+		number := A_LastError
+
+	; The importance of the IGNORE_INSERTS flag: http://blogs.msdn.com/b/oldnewthing/archive/2007/11/28/6564257.aspx
+	if VarSetCapacity(string, 1024) >= 1024
+	ret := DllCall("FormatMessage"
+		, "UInt", 0x00001200 ; DWORD    dwFlags: FORMAT_MESSAGE_FROM_SYSTEM 0x00001000 | FORMAT_MESSAGE_IGNORE_INSERTS 0x00000200
+		, "Ptr",  0          ; void*    lpSource
+		, "UInt", number     ; DWORD    dwMessageId
+		, "UInt", 0          ; DWORD    dwLanguageId: auto
+		, "Str",  string     ; TSTR*    lpBuffer
+		, "UInt", 1024       ; DWORD    nSize
+		, "Ptr",  0)         ; va_list* Arguments
+	
+	StringReplace, string, string, `r`n, %A_Space%, All
+	
+	return string " (#" number ")"
 }
