@@ -410,6 +410,8 @@ _TweakFullscreen()
 		mBottom += 157 - 130
 	}
 	WinMoveClientArea(mRight - mLeft, mBottom - mTop, mLeft, mTop)
+	Sleep 250
+	WinMoveClientArea(mRight - mLeft, mBottom - mTop, mLeft, mTop)
 }
 
 TweakUnFullscreen:
