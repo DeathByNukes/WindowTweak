@@ -11,6 +11,17 @@ CoordMode, Mouse, Screen
 CoordMode, Caret, Screen
 CoordMode, Menu, Screen
 
+hotkey_window = !#Space
+
+; acts on an individual control rather than the whole window
+hotkey_control = ^#Space
+
+; re-runs the last selected menu item at the current cursor position
+hotkey_repeat_window = ^!#Space
+
+;hotkey_window = #Space
+;hotkey_repeat_window = ^!#Space
+
 ; have to be high DPI aware to work with real window coordinates
 EnvGet, __COMPAT_LAYER, __COMPAT_LAYER
 IfNotInString, __COMPAT_LAYER, HIGHDPIAWARE
@@ -145,6 +156,12 @@ Menu, Tweak, Add
 Menu, Tweak, Add, &Close, TweakClose
 	Menu, TweakKill, Add, Yes I'm sure, TweakKillWin
 Menu, Tweak, Add, Kill Process, :TweakKill
+Menu, Tweak, Add
+	Menu, TweakHelp, Add, Window: %hotkey_window%, HotkeyWindow
+	Menu, TweakHelp, Add, Control: %hotkey_control%, HotkeyControl
+	Menu, TweakHelp, Add, Repeat Window: %hotkey_repeat_window%, HotkeyRepeatWindow
+Menu, Tweak, Add, Help, :TweakHelp
+Menu, TRAY, Add, Help, :TweakHelp
 
 
 ; set a default so we don't have to check whether it's set
@@ -154,18 +171,21 @@ click_sound = %ProgramFiles%\DBN\hlwavpak\click.wav
 IfNotExist %click_sound%
 	click_sound = *64
 
+Hotkey, %hotkey_window%, HotkeyWindow
+Hotkey, %hotkey_control%, HotkeyControl
+Hotkey, %hotkey_repeat_window%, HotkeyRepeatWindow
+
 return ; ---------------------------------------------------------------------------------
 
 
-!#Space::
-; #Space::
+HotkeyWindow:
 	MouseGetPos, TweakX, TweakY, TweakWin, TweakControl, 2
 	PixelGetColor, TweakColor, TweakX, TweakY, RGB
 	Menu, Tweak, Show
 return
 
 ; acts on an individual control rather than the whole window
-^#Space::
+HotkeyControl:
 	TweakControl =
 	MouseGetPos, TweakX, TweakY,, TweakWin, 2
 	PixelGetColor, TweakColor, TweakX, TweakY, RGB
@@ -173,8 +193,7 @@ return
 return
 
 ; re-runs the last selected menu item at the current cursor position
-^!#Space::
-; +#Space::
+HotkeyRepeatWindow:
 	SoundPlay %click_sound%
 	MouseGetPos, TweakX, TweakY, TweakWin, TweakControl, 2
 	PixelGetColor, TweakColor, TweakX, TweakY, RGB
