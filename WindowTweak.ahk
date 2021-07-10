@@ -112,6 +112,8 @@ Menu, Tweak, Add, Transparent Color, :TweakTransColor
 	Menu, TweakResize, Add, Paste Dimensions, TweakResizePaste
 	Menu, TweakResize, Add, Resize "Normal", TweakResizeNormal
 	Menu, TweakResize, Add, Resize "Normal" (centered), TweakResizeNormalCentered
+	Menu, TweakResize, Add, Resize 50`%, TweakResizeScale50
+	Menu, TweakResize, Add, Resize 200`%, TweakResizeScale200
 	Menu, TweakResize, Add, Resize 640x480, TweakResize640x480
 	Menu, TweakResize, Add, Resize 800x600, TweakResize800x600
 	Menu, TweakResize, Add, Resize 1024x768, TweakResize1024x768
@@ -229,6 +231,14 @@ TweakTransColor0:
 	WinSet, TransColor, OFF
 return
 
+TweakResizeScale50:
+TweakResizeScale200:
+	TweakInvoked()
+	scale := SubStr(A_ThisLabel,17) / 100
+	WinGetClientPos(TweakWin, 0+0, 0+0, w, h)
+	WinMoveClientArea(w * scale, h * scale)
+return
+
 TweakResize640x480:
 TweakResize800x600:
 TweakResize1024x768:
@@ -251,7 +261,7 @@ return
 
 TweakResizePaste:
 	TweakInvoked()
-	if TweakResizeParse(Clipboard, TweakResizeCustom_X, TweakResizeCustom_Y)
+	if TweakResizeParse(Clipboard, TweakResizeCustom_X, TweakResizeCustom_Y, TweakWin)
 		WinMoveClientArea(TweakResizeCustom_X, TweakResizeCustom_Y)
 	else
 		SoundPlay *16
@@ -287,7 +297,7 @@ TweakResizeCustomClose:
 return
 TweakResizeCustom_Ok:
 	Gui, Submit, Nohide
-	if TweakResizeParse(TweakResizeCustom_Size, TweakResizeCustom_X, TweakResizeCustom_Y)
+	if TweakResizeParse(TweakResizeCustom_Size, TweakResizeCustom_X, TweakResizeCustom_Y, TweakWin)
 	{
 		TweakResizeCustom_Ok = 1
 		return
@@ -300,12 +310,20 @@ TweakResizeRead(TweakWin)
 	WinGetClientPos(TweakWin, 0+0, 0+0, w, h)
 	return w " x " h
 }
-TweakResizeParse(input, ByRef w, ByRef h)
+TweakResizeParse(input, ByRef w, ByRef h, TweakWin)
 {
-	if !RegExMatch(input, "^\s*[a-zA-Z]*\s*(?P<w>\d+)(?:\s*|\s*[a-zA-Z]+\s*|\s*,\s*)(?P<h>\d+)\s*$", match_)
+	if !RegExMatch(input, "^\s*[a-zA-Z]*\s*(?P<w>\d+)(?P<wp>%?)(?:\s*|\s*[a-zA-Z]+\s*|\s*,\s*)(?P<h>\d+)(?P<hp>%?)\s*$", match_)
 		return false
 	w := match_w
 	h := match_h
+	if (match_wp != "" && match_hp != "")
+	{
+		WinGetClientPos(TweakWin, 0+0, 0+0, current_w, current_h)
+		if (match_wp != "")
+			w := w / 100 * current_w
+		if (match_hp != "")
+			h := h / 100 * current_h
+	}
 	return true
 }
 
